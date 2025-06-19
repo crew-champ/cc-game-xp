@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --port 9999",
+    "dev": "next dev --turbopack --port 9999",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
