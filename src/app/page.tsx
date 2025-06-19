@@ -91,14 +91,6 @@ export default function XPCalculator() {
   const [thirdPlacePointsPerDay, setThirdPlacePointsPerDay] = useState<number>(2);
   const [participationPointsPerDay, setParticipationPointsPerDay] = useState<number>(1);
 
-  // Level scaling factor - immediate and debounced versions
-  const [levelScaling, setLevelScaling] = useState<number>(1.15);
-  const [debouncedLevelScaling, setDebouncedLevelScaling] = useState<number>(1.15);
-
-  // Base XP for leveling formula - immediate and debounced versions  
-  const [baseXP, setBaseXP] = useState<number>(0.6);
-  const [debouncedBaseXP, setDebouncedBaseXP] = useState<number>(0.6);
-  
   // Polynomial coefficients - immediate and debounced versions
   const [polyA, setPolyA] = useState<number>(0.035); // x^2 coefficient
   const [polyB, setPolyB] = useState<number>(2.5); // x coefficient
@@ -114,8 +106,6 @@ export default function XPCalculator() {
   useEffect(() => {
     setIsCalculating(true);
     const timeout = setTimeout(() => {
-      setDebouncedLevelScaling(levelScaling);
-      setDebouncedBaseXP(baseXP);
       setDebouncedPolyA(polyA);
       setDebouncedPolyB(polyB);
       setDebouncedPolyC(polyC);
@@ -124,7 +114,7 @@ export default function XPCalculator() {
     }, 300); // 300ms debounce
 
     return () => clearTimeout(timeout);
-  }, [levelScaling, baseXP, polyA, polyB, polyC, polyMultiplier]);
+  }, [polyA, polyB, polyC, polyMultiplier]);
 
   // Get current player profile
   const currentProfile = playerProfiles[selectedProfile];
@@ -180,7 +170,7 @@ export default function XPCalculator() {
     
     // Seeded random number generator for consistent results (same as annotations)
     const seedRandom = (seed: number) => {
-      let x = Math.sin(seed) * 10000;
+      const x = Math.sin(seed) * 10000;
       return x - Math.floor(x);
     };
     
@@ -280,7 +270,7 @@ export default function XPCalculator() {
     });
 
     // Helper function to calculate points for a game type (used only for daily games now)
-    function calculateGameTypePoints(gameCount: number, distribution: any, gameDuration: number): number {
+    function calculateGameTypePoints(gameCount: number, distribution: { first: number; second: number; third: number; participation: number }, gameDuration: number): number {
       const firstPlaceGames = Math.floor(gameCount * distribution.first);
       const secondPlaceGames = Math.floor(gameCount * distribution.second);
       const thirdPlaceGames = Math.floor(gameCount * distribution.third);
@@ -331,16 +321,17 @@ export default function XPCalculator() {
         },
       ],
     };
-  }, [dailyGames, weeklyGames, monthlyGames, firstPlacePointsPerDay, secondPlacePointsPerDay, thirdPlacePointsPerDay, participationPointsPerDay, selectedProfile, debouncedPolyA, debouncedPolyB, debouncedPolyC, debouncedPolyMultiplier]);
+  }, [dailyGames, weeklyGames, monthlyGames, firstPlacePointsPerDay, secondPlacePointsPerDay, thirdPlacePointsPerDay, participationPointsPerDay, selectedProfile, calculateLevelFromXP, currentProfile.distribution]);
 
   // Generate game completion annotations
   const generateGameAnnotations = useMemo(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const annotations: any = {};
     const placementDistribution = currentProfile.distribution;
     
     // Seeded random number generator for consistent results
     const seedRandom = (seed: number) => {
-      let x = Math.sin(seed) * 10000;
+      const x = Math.sin(seed) * 10000;
       return x - Math.floor(x);
     };
     
@@ -437,7 +428,7 @@ export default function XPCalculator() {
       },
       tooltip: {
         callbacks: {
-          title: function(context: any) {
+          title: function(context: { dataIndex: number }[]) {
             const dayOfYear = context[0].dataIndex + 1;
             const date = new Date(2024, 0, dayOfYear);
             const dateStr = date.toLocaleDateString('en-US', { 
@@ -446,7 +437,7 @@ export default function XPCalculator() {
             });
             return [`Day ${dayOfYear} of Year`, dateStr];
           },
-          label: function(context: any) {
+          label: function(context: { dataset: { label?: string }; parsed: { y: number } }) {
             const datasetLabel = context.dataset.label || '';
             const value = context.parsed.y;
             
@@ -474,6 +465,7 @@ export default function XPCalculator() {
           text: 'Cumulative XP Points',
         },
         ticks: {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           callback: function(value: any) {
             return value.toLocaleString();
           }
@@ -870,7 +862,7 @@ export default function XPCalculator() {
                   <div className="flex flex-col items-center gap-3">
                     <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
                     <div className="text-sm text-gray-600 dark:text-gray-300 font-medium">
-                      Recalculating year's progression...
+                      Recalculating year&apos;s progression...
                     </div>
                   </div>
                 </div>
